@@ -1,0 +1,56 @@
+{
+	"$schema": "https://raw.githubusercontent.com/Pure-D/code-d/master/json-validation/dub.schema.json",
+	"authors": [
+		"Ethan P Reker"
+	],
+	"copyright": "Copyright © 2022, Ethan P Reker",
+	"description": "A Dplug project to demonstrate multiband processing",
+	"license": "mit",
+	"name": "bandsplitter",
+    "importPaths": [ "." ],
+    "sourcePaths": [ "." ],
+    "stringImportPaths": ["."],
+
+    "dflags-linux-dmd": ["-defaultlib=libphobos2.a"],
+    "dflags-osx-ldc": ["-static"],
+    "dflags-linux-ldc": ["-link-defaultlib-shared=false"],
+    "dflags-linux-x86_64-ldc": ["-fvisibility=hidden"],
+    "dflags-windows-ldc": ["-mscrtlib=libcmt"],
+
+	"dependencies": {
+		"ddsp": "~>2.5.9",
+		"dplug": "~>12.4.3"
+	},
+
+    "versions": ["futureVST2Chunks"],
+
+    "configurations": [
+        {
+            "name": "VST3",
+            "versions": ["VST3"],
+            "targetType": "dynamicLibrary",
+            "lflags-osx-ldc": [ "-exported_symbols_list", "module-vst3.lst", "-dead_strip" ],
+            "lflags-linux-ldc": [ "--version-script=module-vst3.ver" ]
+        },
+        {
+            "name": "VST2",
+            "versions": ["VST2"],
+            "targetType": "dynamicLibrary",
+            "lflags-osx-ldc": [ "-exported_symbols_list", "module-vst2.lst", "-dead_strip" ],
+            "lflags-linux-ldc": [ "--version-script=module-vst2.ver" ]
+        },
+        {
+            "name": "AU",
+            "versions": ["AU"],
+            "targetType": "dynamicLibrary",
+            "lflags-osx-ldc": [ "-exported_symbols_list", "module-au.lst", "-dead_strip" ]
+        },
+        {
+            "name": "LV2",
+            "versions": ["LV2"],
+            "targetType": "dynamicLibrary",
+            "lflags-osx-ldc": [ "-exported_symbols_list", "module-lv2.lst", "-dead_strip" ],
+            "lflags-linux-ldc": [ "--version-script=module-lv2.ver" ]
+        }
+    ]
+}

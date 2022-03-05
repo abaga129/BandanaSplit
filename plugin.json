@@ -1,0 +1,15 @@
+{
+    "$schema": "https://raw.githubusercontent.com/AuburnSounds/dplug/master/plugin-schema.json",
+    "vendorName": "Witty Audio",
+    "vendorUniqueID": "Wity",
+    "vendorSupportEmail": "support@wittyaudio.com",
+    "pluginName": "Bandana Split",
+    "pluginHomepage": "https://www.wittyaudio.com/BandanaSplit",
+    "pluginUniqueID": "ClPi",
+    "publicVersion": "1.0.0",
+    "CFBundleIdentifierPrefix": "com.wittyaudio",
+    "hasGUI": false,
+    "isSynth": false,
+    "receivesMIDI": true,
+    "category": "effectDistortion"
+}

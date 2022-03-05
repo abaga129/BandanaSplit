@@ -1,0 +1,9 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"ddsp": "2.5.9",
+		"dplug": "12.4.3",
+		"intel-intrinsics": "1.8.0",
+		"wren-port": "1.1.1"
+	}
+}
