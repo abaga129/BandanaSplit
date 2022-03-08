@@ -2,13 +2,9 @@
 docs.json
 __dummy.html
 docs/
-epiccomp.so
-epiccomp.dylib
-epiccomp.dll
-epiccomp.a
-epiccomp.lib
-epiccomp-test-*
 *.exe
 *.o
 *.obj
 builds/
+*.dll
+*.a
