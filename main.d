@@ -13,6 +13,8 @@ import dplug.core,
 import core.stdc.math : tanhf;
 import std.math : abs;
 
+import ddsp.filter;
+
 
 // This define entry points for plugin formats, 
 // depending on which version identifiers are defined.
@@ -23,9 +25,9 @@ enum : int
     paramInputGain,
     paramCrossoverFreq1,
     paramCrossoverFreq2,
-    paramDistortBand1,
-    paramDistortBand2,
-    paramDistortBand3,
+    paramGainBand1,
+    paramGainBand2,
+    paramGainBand3,
     paramOutputGain
 }
 
@@ -39,6 +41,20 @@ nothrow:
 
     this()
     {
+        _lp1 = mallocNew!(LinkwitzRileyLPNthOrder!float)(8);
+        _lp2 = mallocNew!(LinkwitzRileyLPNthOrder!float)(8);
+        _hp1 = mallocNew!(LinkwitzRileyHPNthOrder!float)(8);
+        _hp2 = mallocNew!(LinkwitzRileyHPNthOrder!float)(8);
+        _ap1 = mallocNew!(AllpassNthOrder!float)(8);
+    }
+
+    ~this()
+    {
+        _lp1.destroyFree();
+        _lp2.destroyFree();
+        _hp1.destroyFree();
+        _hp2.destroyFree();
+        _ap1.destroyFree();
     }
 
     override PluginInfo buildPluginInfo()
@@ -59,9 +75,9 @@ nothrow:
         params ~= mallocNew!LinearFloatParameter(paramInputGain, "input gain", "dB", -12.0f, 12.0f, 0.0f) ;
         params ~= mallocNew!LinearFloatParameter(paramCrossoverFreq1, "Crossover Frequency 1", "Hz", 20.0f, 22_000.0f, 500.0f);
         params ~= mallocNew!LinearFloatParameter(paramCrossoverFreq2, "Crossover Frequency 2", "Hz", 20.0f, 22_000.0f, 5000.0f);
-        params ~= mallocNew!LinearFloatParameter(paramDistortBand1, "Distort Band 1", "%", 0, 100, 0);
-        params ~= mallocNew!LinearFloatParameter(paramDistortBand2, "Distort Band 2", "%", 0, 100, 0);
-        params ~= mallocNew!LinearFloatParameter(paramDistortBand3, "Distort Band 3", "%", 0, 100, 0);
+        params ~= mallocNew!LinearFloatParameter(paramGainBand1, "Volume Band 1", "%", 0, 100, 0);
+        params ~= mallocNew!LinearFloatParameter(paramGainBand2, "Volume Band 2", "%", 0, 100, 0);
+        params ~= mallocNew!LinearFloatParameter(paramGainBand3, "Volume Band 3", "%", 0, 100, 0);
         params ~= mallocNew!LinearFloatParameter(paramOutputGain, "output gain", "db", -12.0f, 12.0f, 0.0f) ;
         return params.releaseData();
     }
@@ -95,6 +111,11 @@ nothrow:
     override void reset(double sampleRate, int maxFrames, int numInputs, int numOutputs) nothrow @nogc
     {
         // Clear here any state and delay buffers you might have.
+        _lp1.setSampleRate(sampleRate);
+        _lp2.setSampleRate(sampleRate);
+        _hp1.setSampleRate(sampleRate);
+        _hp2.setSampleRate(sampleRate);
+        _ap1.setSampleRate(sampleRate);
 
         assert(maxFrames <= 512); // guaranteed by audio buffer splitting
     }
@@ -115,9 +136,15 @@ nothrow:
         immutable float outputGain = pow(10, readParam!float(paramOutputGain) /20);
         immutable float freq1 = readParam!float(paramCrossoverFreq1);
         immutable float freq2 = readParam!float(paramCrossoverFreq2);
-        immutable float distortBand1 = readParam!float(paramDistortBand1) / 100.0f;
-        immutable float distortBand2 = readParam!float(paramDistortBand2) / 100.0f;
-        immutable float distortBand3 = readParam!float(paramDistortBand3) / 100.0f;
+        immutable float gainBand1 = readParam!float(paramGainBand1) / 100.0f;
+        immutable float gainBand2 = readParam!float(paramGainBand2) / 100.0f;
+        immutable float gainBand3 = readParam!float(paramGainBand3) / 100.0f;
+
+        _lp1.setFrequency(freq1);
+        _lp2.setFrequency(freq2);
+        _hp1.setFrequency(freq1);
+        _hp2.setFrequency(freq2);
+        _ap1.setFrequency(freq2);
 
         for (int f = 0; f < frames; ++f)
         {
@@ -129,8 +156,14 @@ nothrow:
             }
             inputSample = inputSample / minChan * inputGain;
 
+            immutable float band1 = _ap1.getNextSample(_lp1.getNextSample(inputSample));
+           
+            immutable float highPassFreq1 = _hp1.getNextSample(inputSample);
+            immutable float band2 = _lp2.getNextSample(highPassFreq1);
+            immutable float band3 = _hp2.getNextSample(highPassFreq1);
+
             //Process Sample
-            float outputSample = waveShaper(inputSample, distortBand1);
+            float outputSample = (band1 * gainBand1) + (band2 * gainBand2) + (band3 * gainBand3);
 
             // Assign output
             for (int chan = 0; chan < minChan; ++chan)
@@ -147,6 +180,12 @@ nothrow:
     }
 
 private:
+    LinkwitzRileyLPNthOrder!float _lp1;
+    LinkwitzRileyLPNthOrder!float _lp2;
+    LinkwitzRileyHPNthOrder!float _hp1;
+    LinkwitzRileyHPNthOrder!float _hp2;
+
+    AllpassNthOrder!float _ap1;
 
     float waveShaper(float x, float amount)
     {
